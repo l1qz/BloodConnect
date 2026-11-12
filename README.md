@@ -1,11 +1,73 @@
-<div align="center">
+# BloodConnect — Interactive Blood Donation Demo
 
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+نظام ويب يربط المستشفيات في كركوك بالمتبرعين بالدم المؤهلين عند الحالات العاجلة.
+Flask + SQLite + Tailwind (RTL عربي/کوردی سۆرانی + English) + JavaScript (AJAX و polling).
 
-  <h1>Built with AI Studio</h2>
+تبدأ الصفحة الرئيسية بعرض تعريفي تفاعلي مع قسم الفريق، ويمكن تبديل اللغة من شريط العنوان بين العربية والكوردية السورانية والإنجليزية، واللغة الافتراضية هي العربية. يتم الاحتفاظ باللغة المختارة حتى بعد تسجيل الدخول أو الخروج، وتشمل الترجمة القوائم والنماذج والحالات والإشعارات وصفحات المساعدة والتوعية.
 
-  <p>The fastest path from prompt to production with Gemini.</p>
+## التشغيل
 
-  <a href="https://aistudio.google.com/apps">Start building</a>
+**Windows (PowerShell):**
+```powershell
+python -m venv venv
+.\venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+python seed.py
+flask --app app run --debug
+```
 
-</div>
+**Linux / macOS:**
+```bash
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+python seed.py
+flask --app app run --debug
+```
+
+افتح `http://127.0.0.1:5000`. ملاحظة: `python seed.py` يعيد إنشاء قاعدة بيانات العرض ويحذف بيانات قاعدة البيانات السابقة.
+
+للاختبار الآلي: `python test_flow.py`
+
+## ملاحظة مهمة
+واجهة Tailwind والخط يُحمَّلان من الإنترنت (CDN). جرّب العرض مرة واحدة على الشبكة نفسها
+التي ستعرض عليها، أو جهّز هاتفك كنقطة اتصال (hotspot).
+
+## الحسابات التجريبية
+| الدور | الهاتف | كلمة المرور |
+|---|---|---|
+| مدير | 07700000000 | admin123 |
+| مستشفى كركوك العام | 07701000001 | hosp123 |
+| مستشفى آزادي | 07701000002 | hosp123 |
+| مستشفى الحويجة (معلّق) | 07701000003 | hosp123 |
+| متبرع: أحمد (O-) | 07702000001 | donor123 |
+| متبرع: سارة (O+) | 07702000002 | donor123 |
+المتبرعون الباقون: 07702000003 ... 07702000014 بكلمة المرور donor123.
+
+## البنية
+- `app.py` نقطة البداية، `config.py` الإعدادات، `db.py` الاتصال بقاعدة البيانات
+- `routes/` المسارات (auth, donor, hospital, admin, api)
+- `services/matching.py` منطق المطابقة وتأكيد التبرع
+- `templates/` و `static/js/app.js` الواجهة
+- `schema.sql` الجداول، `seed.py` بيانات العرض
+
+## إضافات BloodConnect
+
+الإضافات الجديدة لا تغيّر الجداول الأصلية؛ تُنشأ جداولها المساعدة تلقائيًا عند أول استخدام:
+
+- المتبرع المسجّل يفتح `/features/card` لعرض بطاقة QR وتنزيلها. رابط QR موقّع ولا يعرض السجلات إلا للمستشفى أو المدير بعد تسجيل الدخول عبر `/features/verify`.
+- المساعد `/features/chatbot` يقدّم إجابات محلية عامة عن الأهلية والاستعداد والتعافي والخوف وفصائل الدم، مع التنبيه إلى أن القرار الطبي للطاقم المختص.
+- بعد تأكيد المستشفى للتبرع، تُضاف 100 نقطة مرة واحدة فقط إلى `/features/rewards`. المدير يدير المكافآت من `/features/admin/rewards`.
+- صفحة التوعية العامة `/features/motivation` متاحة من رابط «لماذا نتبرع؟»، وتشرح أهمية التبرع وخطواته وطرق التعامل مع الخوف من الإبر باللغات الثلاث.
+- عند فتح لوحة المتبرع، يعيد النظام فحص طلبات المستشفيات المفتوحة التي لم تُطابق معه سابقًا، مثل الطلبات المنشورة قبل تسجيل المتبرع أو قبل تفعيل حالة التوفر. وعند تفعيل التوفر تُنفّذ المطابقة مباشرة دون إرسال إشعارات مكررة.
+- تظهر أسماء مناطق كركوك بحسب اللغة المختارة، وتُترجم إشعارات النظام إلى لغة المستخدم. تبقى أسماء الأشخاص والمستشفيات والملاحظات التي يكتبها المستخدم باللغة التي أُدخلت بها.
+
+تحتاج بطاقات QR إلى الحزمة المضافة في `requirements.txt`. شغّل `pip install -r requirements.txt` قبل تشغيل التطبيق.
+
+## الأمان (Security) — انظر `SECURITY_AUDIT.md`
+
+- `python test_flow.py` (المنطق الوظيفي) و`python test_security.py` (الضوابط الأمنية) يجب أن ينجحا قبل أي عرض.
+- التطوير والعرض: لا حاجة لأي إعداد، يُولَّد مفتاح جلسة عشوائي عند كل تشغيل.
+- الإنتاج: `APP_ENV=production` + `SECRET_KEY` (32 حرفًا فأكثر: `flask --app app generate-keys`) + HTTPS عبر reverse proxy + `TRUST_PROXY=1`.
+- لا تشغّل `--debug` على خادم متاح للشبكة، ولا تشغّل `seed.py` على بيانات حقيقية (يرفض ذلك عند `APP_ENV=production`).
+- مهمة الاحتفاظ بالبيانات (يوميًا): `flask --app app purge-data`. حذف متبرع بطلبه: `flask --app app erase-user 07XXXXXXXXX`.
